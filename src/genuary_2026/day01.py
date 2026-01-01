@@ -56,10 +56,10 @@ for (y, x), age in zip(nodes.T, node_ages):
     rr, cc = disk((y, x), radius, shape=grid.shape)
     grid[rr, cc, 1] = 1
 
-# Draw the random targets
-for y, x in targets.T:
-    rr, cc = disk((y, x), 2, shape=grid.shape)
-    grid[rr, cc, 2] = 1
+# # Draw the random targets
+# for y, x in targets.T:
+#     rr, cc = disk((y, x), 2, shape=grid.shape)
+#     grid[rr, cc, 2] = 1
 
 # Show and save grid
 fig, axs = plt.subplots(1, 1, figsize=(10, 10), squeeze=False)
