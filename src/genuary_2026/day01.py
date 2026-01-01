@@ -29,32 +29,20 @@ nodes = np.array([[GRID_SIZE], [GRID_SIZE // 2]])
 
 # Run the algorithm, creating new nodes to move towards targets
 for val in range(NUM_STEPS):
-    distance_thresh = ((NUM_STEPS - val) / NUM_STEPS) * GRID_SIZE
     node_target_distances = cdist(nodes.T, targets.T)
-    node_target_distances[node_target_distances > distance_thresh] = np.inf
-    closest_node_distances = np.min(node_target_distances, axis=0)
     closest_nodes_to_targets = np.argmin(node_target_distances, axis=0)
-    valid_nodes = set(
-        [
-            node
-            for node, dist in zip(closest_nodes_to_targets, closest_node_distances)
-            if dist != np.inf
-        ]
-    )
-    for node_index in valid_nodes:
-        node_position = nodes[:, node_index]
+    for node_index in set(closest_nodes_to_targets):
+        node_position = nodes[:, node_index][:, None]
         target_positions = targets[
             :, np.where(closest_nodes_to_targets == node_index)
         ].squeeze()
-        average_direction_to_targets = np.mean(
-            target_positions - node_position[:, None], axis=1
-        )
+        average_direction_to_targets = np.mean(target_positions - node_position, axis=1)
         magnitude = np.linalg.norm(average_direction_to_targets) + 1e-6
         average_direction_to_targets += rng.random(size=(2,)) * magnitude * 0.5
         direction_norm = average_direction_to_targets / magnitude
         direction_step = (direction_norm * STEP_SIZE).astype(int).T
-        new_point = node_position + direction_step
-        nodes = np.concat([nodes, new_point[:, None]], axis=-1)
+        new_point = node_position + direction_step[:, None]
+        nodes = np.concat([nodes, new_point], axis=-1)
         node_ages.append(val)
 
 
