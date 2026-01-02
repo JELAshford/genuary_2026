@@ -1,4 +1,4 @@
-"""Twelve principles of animation! Lerp and squish
+"""Twelve principles of animation! Ease and squish
 Easing resource: https://easings.net
 """
 
@@ -25,10 +25,7 @@ fig, ax = plt.subplots()
 ax.set_xticks([])
 ax.set_yticks([])
 
-# Basics: let's make an animation of a circle going back and forht
-# then we can add the squooshing and easing
-grid = np.zeros((GRID_SIZE // 2, GRID_SIZE))
-ims = []
+# Generate x-axis positions and velocities for the back-and-forth motion
 fracs = np.linspace(0, 1, FRAMES)
 eased_positions = ease_inoutsine(ease_inoutsine(fracs))
 eased_velocties = 0.8 + (np.diagonal(jacobian(ease_inoutsine)(fracs)) ** 3 / 2)
@@ -37,11 +34,14 @@ positions = scale_and_offset(
     min_val=CIRCLE_RADIUS * 0.8,
     max_val=GRID_SIZE - (CIRCLE_RADIUS * 0.8),
 )
-eased_velocties = np.concat([eased_velocties, eased_velocties[::-1][1:]])
-positions = np.concat([positions, positions[::-1][1:]])
-for position, velocity in zip(positions, eased_velocties):
+looped_positions = np.concat([positions, positions[::-1][1:]])
+looped_velocties = np.concat([eased_velocties, eased_velocties[::-1][1:]])
+
+# Draw the stretched circle and save Artist objects
+ims = []
+grid = np.zeros((GRID_SIZE // 2, GRID_SIZE))
+for position, velocity in zip(looped_positions, looped_velocties):
     grid *= 0.8
-    # grid = np.zeros((GRID_SIZE // 2, GRID_SIZE))
     row = GRID_SIZE // 4
     r_radius = (CIRCLE_RADIUS * 1.5) / (velocity * 2)
     c_radius = (CIRCLE_RADIUS * 1.5) * (velocity * 0.5)
@@ -53,24 +53,10 @@ for position, velocity in zip(positions, eased_velocties):
         shape=grid.shape,
     )
     grid[rr, cc] = 1
-    # rr, cc = ellipse(
-    #     r=row,
-    #     c=position,
-    #     r_radius=r_radius // 2,
-    #     c_radius=c_radius // 2,
-    #     shape=grid.shape,
-    # )
-    # grid[rr, cc] = 0
     im = ax.imshow(grid, cmap="gray")
     ims.append([im])
 
-ani = animation.ArtistAnimation(
-    fig,
-    ims,
-    interval=10,
-    blit=True,
-    repeat=True,
-)
+# Create and save animation
+ani = animation.ArtistAnimation(fig, ims, interval=10, blit=True, repeat=True)
 ani.save("out/day02.gif", fps=60)
-
-plt.show()
+plt.close()
