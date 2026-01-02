@@ -19,35 +19,26 @@ def lerp(from_point: np.ndarray, to_point: np.ndarray, ts: np.ndarray):
 GRID_SIZE = 1000
 RADIUS = 50
 FRAMES = 20
+SEED = 1701
 
-fig, ax = plt.subplots()
-ax.set_xticks([])
-ax.set_yticks([])
-
-# Generate x-axis positions and velocities for the back-and-forth motion
+# Generate the path and eased positions/velocities
 quart = GRID_SIZE // 4
-path = np.array(
-    [
-        [quart, quart],
-        [quart, 3 * quart],
-        [3 * quart, 3 * quart],
-        # [3 * quart, quart],
-        [quart, quart],
-    ]
-)[:, :, None]
+rng = np.random.default_rng(seed=SEED)
+path = rng.integers(RADIUS, GRID_SIZE - RADIUS, size=(5, 2, 1))
+path = np.concat([path, path[[0]]])
+
 fracs = np.linspace(0, 1, FRAMES)
 eased_positions = ease_inoutsine(fracs)
 eased_velocties = 1 + (np.diagonal(jacobian(ease_inoutsine)(fracs)) ** 3)
 
+# Iterate along the path, generating and storing frames on the grid
 ims = []
+fig, ax = plt.subplots()
+ax.set_xticks([])
+ax.set_yticks([])
+grid = np.zeros((GRID_SIZE, GRID_SIZE))
 for p1, p2 in zip(path, path[1:]):
     positions = lerp(p1, p2, eased_positions)
-    direction = (p1 - p2).flatten()[::-1]
-    angle = np.atan2(*direction)
-    angle = ((angle + np.pi + np.pi / 2) % (2 * np.pi)) - np.pi
-
-    # Draw the stretched circle and save Artist objects
-    grid = np.zeros((GRID_SIZE, GRID_SIZE))
     for (y, x), velocity in zip(zip(*positions), eased_velocties):
         grid *= 0.8
         rr, cc = ellipse(
@@ -56,7 +47,7 @@ for p1, p2 in zip(path, path[1:]):
             r_radius=(RADIUS / velocity),
             c_radius=(RADIUS * velocity),
             shape=grid.shape,
-            rotation=angle,
+            rotation=-np.atan2(*(p2 - p1).flatten()),
         )
         grid[rr, cc] = 1
         im = ax.imshow(grid, cmap="gray")
