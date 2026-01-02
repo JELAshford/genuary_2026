@@ -42,14 +42,11 @@ ims = []
 grid = np.zeros((GRID_SIZE // 2, GRID_SIZE))
 for position, velocity in zip(looped_positions, looped_velocties):
     grid *= 0.8
-    row = GRID_SIZE // 4
-    r_radius = (CIRCLE_RADIUS * 1.5) / (velocity * 2)
-    c_radius = (CIRCLE_RADIUS * 1.5) * (velocity * 0.5)
     rr, cc = ellipse(
-        r=row,
+        r=GRID_SIZE // 4,
         c=position,
-        r_radius=r_radius,
-        c_radius=c_radius,
+        r_radius=(CIRCLE_RADIUS * 1.5) / (velocity * 2),
+        c_radius=(CIRCLE_RADIUS * 1.5) * (velocity * 0.5),
         shape=grid.shape,
     )
     grid[rr, cc] = 1
