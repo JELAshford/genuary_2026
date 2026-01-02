@@ -25,30 +25,42 @@ ax.set_xticks([])
 ax.set_yticks([])
 
 # Generate x-axis positions and velocities for the back-and-forth motion
-path = np.array([[GRID_SIZE // 4, RADIUS], [GRID_SIZE // 4, GRID_SIZE - RADIUS]]).T
+quart = GRID_SIZE // 4
+path = np.array(
+    [
+        [quart, quart],
+        [quart, 3 * quart],
+        [3 * quart, 3 * quart],
+        # [3 * quart, quart],
+        [quart, quart],
+    ]
+)[:, :, None]
 fracs = np.linspace(0, 1, FRAMES)
 eased_positions = ease_inoutsine(fracs)
 eased_velocties = 1 + (np.diagonal(jacobian(ease_inoutsine)(fracs)) ** 3)
-positions = lerp(path[:, [0]], path[:, [1]], eased_positions)
 
-looped_positions = np.concat([positions, positions[:, ::-1][:, 1:]], axis=-1)
-looped_velocties = np.concat([eased_velocties, eased_velocties[::-1][1:]])
-
-# Draw the stretched circle and save Artist objects
 ims = []
-grid = np.zeros((GRID_SIZE // 2, GRID_SIZE))
-for (y, x), velocity in zip(zip(*looped_positions), looped_velocties):
-    grid *= 0.8
-    rr, cc = ellipse(
-        r=y,
-        c=x,
-        r_radius=(RADIUS / velocity),
-        c_radius=(RADIUS * velocity),
-        shape=grid.shape,
-    )
-    grid[rr, cc] = 1
-    im = ax.imshow(grid, cmap="gray")
-    ims.append([im])
+for p1, p2 in zip(path, path[1:]):
+    positions = lerp(p1, p2, eased_positions)
+    direction = (p1 - p2).flatten()[::-1]
+    angle = np.atan2(*direction)
+    angle = ((angle + np.pi + np.pi / 2) % (2 * np.pi)) - np.pi
+
+    # Draw the stretched circle and save Artist objects
+    grid = np.zeros((GRID_SIZE, GRID_SIZE))
+    for (y, x), velocity in zip(zip(*positions), eased_velocties):
+        grid *= 0.8
+        rr, cc = ellipse(
+            r=y,
+            c=x,
+            r_radius=(RADIUS / velocity),
+            c_radius=(RADIUS * velocity),
+            shape=grid.shape,
+            rotation=angle,
+        )
+        grid[rr, cc] = 1
+        im = ax.imshow(grid, cmap="gray")
+        ims.append([im])
 
 # Create and save animation
 ani = animation.ArtistAnimation(fig, ims, interval=10, blit=True, repeat=True)
