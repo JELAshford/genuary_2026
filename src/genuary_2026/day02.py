@@ -22,7 +22,6 @@ FRAMES = 20
 SEED = 1701
 
 # Generate the path and eased positions/velocities
-quart = GRID_SIZE // 4
 rng = np.random.default_rng(seed=SEED)
 path = rng.integers(RADIUS, GRID_SIZE - RADIUS, size=(5, 2, 1))
 path = np.concat([path, path[[0]]])
