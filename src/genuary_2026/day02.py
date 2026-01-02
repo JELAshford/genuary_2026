@@ -1,6 +1,4 @@
-"""Twelve principles of animation! Ease and squish
-Easing resource: https://easings.net
-"""
+"""Twelve principles of animation! Ease and squish"""
 
 import matplotlib.animation as animation
 from skimage.draw import ellipse
@@ -9,16 +7,17 @@ from autograd import jacobian
 import autograd.numpy as np
 
 
-def scale_and_offset(frac_array: np.ndarray, min_val: int, max_val: int):
-    return (frac_array * (max_val - min_val)) + min_val
-
-
 def ease_inoutsine(t: np.ndarray):
     return -(np.cos(np.pi * t) - 1) / 2
 
 
+def lerp(from_point: np.ndarray, to_point: np.ndarray, ts: np.ndarray):
+    """{from,to}_point must be in (dim, 1) layout (e.g. for 2d points its (2, 1))."""
+    return (1 - ts) * from_point + ts * to_point
+
+
 GRID_SIZE = 1000
-CIRCLE_RADIUS = 100
+RADIUS = 50
 FRAMES = 20
 
 fig, ax = plt.subplots()
@@ -26,27 +25,25 @@ ax.set_xticks([])
 ax.set_yticks([])
 
 # Generate x-axis positions and velocities for the back-and-forth motion
+path = np.array([[GRID_SIZE // 4, RADIUS], [GRID_SIZE // 4, GRID_SIZE - RADIUS]]).T
 fracs = np.linspace(0, 1, FRAMES)
-eased_positions = ease_inoutsine(ease_inoutsine(fracs))
-eased_velocties = 0.8 + (np.diagonal(jacobian(ease_inoutsine)(fracs)) ** 3 / 2)
-positions = scale_and_offset(
-    eased_positions,
-    min_val=CIRCLE_RADIUS * 0.8,
-    max_val=GRID_SIZE - (CIRCLE_RADIUS * 0.8),
-)
-looped_positions = np.concat([positions, positions[::-1][1:]])
+eased_positions = ease_inoutsine(fracs)
+eased_velocties = 1 + (np.diagonal(jacobian(ease_inoutsine)(fracs)) ** 3)
+positions = lerp(path[:, [0]], path[:, [1]], eased_positions)
+
+looped_positions = np.concat([positions, positions[:, ::-1][:, 1:]], axis=-1)
 looped_velocties = np.concat([eased_velocties, eased_velocties[::-1][1:]])
 
 # Draw the stretched circle and save Artist objects
 ims = []
 grid = np.zeros((GRID_SIZE // 2, GRID_SIZE))
-for position, velocity in zip(looped_positions, looped_velocties):
+for (y, x), velocity in zip(zip(*looped_positions), looped_velocties):
     grid *= 0.8
     rr, cc = ellipse(
-        r=GRID_SIZE // 4,
-        c=position,
-        r_radius=(CIRCLE_RADIUS * 1.5) / (velocity * 2),
-        c_radius=(CIRCLE_RADIUS * 1.5) * (velocity * 0.5),
+        r=y,
+        c=x,
+        r_radius=(RADIUS / velocity),
+        c_radius=(RADIUS * velocity),
         shape=grid.shape,
     )
     grid[rr, cc] = 1
@@ -55,5 +52,5 @@ for position, velocity in zip(looped_positions, looped_velocties):
 
 # Create and save animation
 ani = animation.ArtistAnimation(fig, ims, interval=10, blit=True, repeat=True)
-ani.save("out/day02.gif", fps=60)
+ani.save("out/day02.gif", fps=60, savefig_kwargs=dict(transparent=True))
 plt.close()
