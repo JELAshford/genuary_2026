@@ -4,7 +4,7 @@ import matplotlib.pylab as plt
 from PIL import Image
 import numpy as np
 
-SCALE = 16
+SCALE = 12
 NUM_RECTS = 20
 SEED = 1701
 
@@ -20,21 +20,19 @@ lowres = image_array[::SCALE, ::SCALE, :].repeat(SCALE, 0).repeat(SCALE, 1)
 
 # Create random squares of high res
 base, top = lowres, image_array
-# base, top = image_array, lowres
 
-# Apply random rectangle windows
+# Transition between the low and high res options
 rng = np.random.default_rng(seed=SEED)
-rects = rng.random(size=(NUM_RECTS, 4))
-rects[:, 0] *= height
-rects[:, 1] *= width
-rects[:, 2] *= height // 2
-rects[:, 3] *= width // 3
-rects = rects.astype(int)
-for y, x, h, w in rects:
-    my = min(y + h, height)
-    mx = min(x + w, width)
-    base[(y - 5) : (my + 5), (x - 5) : (mx + 5)] = 0
-    base[y:my, x:mx] = top[y:my, x:mx]
+point = np.array([height // 2, width // 2]).astype(int)
+yy, xx = np.meshgrid(np.arange(width), np.arange(height))
+dist = yy.astype(float)
+dist /= dist.max()
+dist += rng.random(dist.shape) * 0.5
+dist = dist[::SCALE, ::SCALE].repeat(SCALE, 0).repeat(SCALE, 1)
+mix = dist > 0.7
+# plt.imshow(mix)
+# plt.show()
+base[mix] = top[mix]
 
 # Show!
 fig, ax = plt.subplots(1, 1)
